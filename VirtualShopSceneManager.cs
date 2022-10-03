@@ -9,44 +9,29 @@ namespace VirtualShop
 {
     public class VirtualShopSceneManager : MonoBehaviour
     {
-        const int k_EconomyPurchaseCostsNotMetStatusCode = 10504;
-        
         public VirtualShopSampleView virtualShopSampleView;
+        
+        private const int k_EconomyPurchaseCostsNotMetStatusCode = 10504;
         private List<VirtualShopCategory> _categories = new();
 
         public async Task Init()
         {
             try
             {
-                // Economy configuration should be refreshed every time the app initializes.
-                // Doing so updates the cached configuration data and initializes for this player any items or
-                // currencies that were recently published.
-                // 
-                // It's important to do this update before making any other calls to the Economy or Remote Config
-                // APIs as both use the cached data list. (Though it wouldn't be necessary to do if only using Remote
-                // Config in your project and not Economy.)
                 await EconomyManager.instance.RefreshEconomyConfiguration();
                 if (this == null) return;
 
                 EconomyManager.instance.InitializeVirtualPurchaseLookup();
 
-                // Note: We want these methods to use the most up to date configuration data, so we will wait to
-                // call them until the previous two methods (which update the configuration data) have completed.
                 await Task.WhenAll(AddressablesManager.instance.PreloadAllEconomySprites(),
                     RemoteConfigManager.instance.FetchConfigs(),
                     EconomyManager.instance.RefreshCurrencyBalances());
                 if (this == null) return;
 
-                // Read all badge addressables
-                // Note: must be done after Remote Config values have been read (above).
                 await AddressablesManager.instance.PreloadAllShopBadgeSprites(
                     RemoteConfigManager.instance.virtualShopConfig.categories);
 
-                // Initialize all shops.
-                // Note: must be done after all other initialization has completed (above).
                 VirtualShopManager.instance.Initialize();
-
-                //virtualShopSampleView.Initialize(VirtualShopManager.instance.virtualShopCategories);
 
                 foreach (var cat in RemoteConfigManager.instance.virtualShopConfig.categories)
                 {
@@ -57,30 +42,16 @@ namespace VirtualShop
                         throw new KeyNotFoundException($"Unable to find shop category {firstCategoryId}.");
                     }
                     _categories.Add(category);
-                    //virtualShopSampleView.ShowCategory(firstCategory);
                 }                
 
                 virtualShopSampleView.ShowCategory(_categories);
 
                 Debug.Log("Initialization and sign in complete.");
-
-                //EnablePurchases();
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
             }
-        }
-
-        //void EnablePurchases()
-        //{
-        //    virtualShopSampleView.SetInteractable();
-        //}
-
-        public void OnCategoryButtonClicked(string categoryId)
-        {
-            var virtualShopCategory = VirtualShopManager.instance.virtualShopCategories[categoryId];
-            //virtualShopSampleView.ShowCategory(virtualShopCategory);
         }
 
         public async Task OnPurchaseClicked(VirtualShopItem virtualShopItem)
