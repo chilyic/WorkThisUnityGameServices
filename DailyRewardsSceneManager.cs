@@ -7,11 +7,7 @@ namespace DailyRewards
     public class DailyRewardsSceneManager : MonoBehaviour
     {
         public DailyRewardsSampleView sceneView;
-
-        //public Button openDailyRewardsButton;
-
-        DailyRewardsEventManager eventManager;
-
+        private DailyRewardsEventManager eventManager;
 
         void Awake()
         {
@@ -22,21 +18,12 @@ namespace DailyRewards
         {
             try
             {
-                // Economy configuration should be refreshed every time the app initializes.
-                // Doing so updates the cached configuration data and initializes for this player any items or
-                // currencies that were recently published.
-                // 
-                // It's important to do this update before making any other calls to the Economy or Remote Config
-                // APIs as both use the cached data list. (Though it wouldn't be necessary to do if only using Remote
-                // Config in your project and not Economy.)
                 await EconomyManager.instance.RefreshEconomyConfiguration();
                 if (this == null) return;
 
                 await Task.WhenAll(
                     EconomyManager.instance.FetchCurrencySprites(),
                     EconomyManager.instance.RefreshCurrencyBalances(),
-                    // This method ultimately calls a Cloud Code script that makes Remote Config calls, so must
-                    // happen after RefreshEconomyConfiguration.
                     eventManager.RefreshDailyRewardsEventStatus()
                 );
                 if (this == null) return;
@@ -50,8 +37,6 @@ namespace DailyRewards
                 }
 
                 ShowStatus();
-
-                //openDailyRewardsButton.interactable = true;
             }
             catch (Exception e)
             {
@@ -66,18 +51,14 @@ namespace DailyRewards
                 return;
             }
 
-            // Only update if the event is actually active
             if (eventManager.isStarted && !eventManager.isEnded)
             {
-                // Request periodic update to update timers and start new day, if necessary.
                 if (eventManager.UpdateRewardsStatus(sceneView))
                 {
-                    // Update call returned true to signal start of new day so full update is required.
                     sceneView.UpdateStatus(eventManager);
                 }
                 else
                 {
-                    // Update call signaled that only timers require updating (new day did not begin yet).
                     sceneView.UpdateTimers(eventManager);
                 }
             }
@@ -98,8 +79,6 @@ namespace DailyRewards
             Debug.Log(eventManager.totalCalendarDays);
             try
             {
-                // Disable all claim buttons to prevent multiple collect requests.
-                // Button is reenabled when the state is refreshed after the claim has been fully processed.
                 sceneView.SetAllDaysUnclaimable();
 
                 await eventManager.ClaimDailyReward();
@@ -129,8 +108,6 @@ namespace DailyRewards
                 }
 
                 ShowStatus();
-
-                //sceneView.OpenEventWindow();
             }
             catch (Exception e)
             {
