@@ -11,19 +11,12 @@ namespace StarterPack
     {
         public static event Action<bool> StarterPackStatusChecked;
 
-        const string k_StarterPackCloudSaveKey = "STARTER_PACK_STATUS";
+        private const string k_StarterPackCloudSaveKey = "STARTER_PACK_STATUS";
 
         public async Task Init()
         {
             try
             {
-                // Economy configuration should be refreshed every time the app initializes.
-                // Doing so updates the cached configuration data and initializes for this player any items or
-                // currencies that were recently published.
-                // 
-                // It's important to do this update before making any other calls to the Economy or Remote Config
-                // APIs as both use the cached data list. (Though it wouldn't be necessary to do if only using Remote
-                // Config in your project and not Economy.)
                 await EconomyManager.instance.RefreshEconomyConfiguration();
                 if (this == null) return;
 
@@ -31,7 +24,6 @@ namespace StarterPack
 
                 await Task.WhenAll(EconomyManager.instance.RefreshCurrencyBalances(),
                     EconomyManager.instance.RefreshInventory(),
-                    //VirtualShop.AddressablesManager.instance.PreloadAllEconomySprites(),
                     RefreshStarterPackStatus());
             }
             catch (Exception e)
@@ -103,9 +95,6 @@ namespace StarterPack
             {
                 StarterPackSampleView.instance.SetInteractable(false);
 
-                // Delete the Starter-Pack-purchased key ("STARTER_PACK_STATUS") from Cloud Save so
-                // Starter Pack can be purchased again. This is used for testing to permit repurchasing
-                // this one-time-only product.
                 await CloudSaveService.Instance.Data.ForceDeleteAsync(k_StarterPackCloudSaveKey);
                 if (this == null) return;
 
@@ -130,11 +119,10 @@ namespace StarterPack
 
             try
             {
-                // Read the "STARTER_PACK_STATUS" key from Cloud Save
                 var starterPackStatusCloudSaveResult = await CloudSaveService.Instance.Data.LoadAsync(
                     new HashSet<string> { k_StarterPackCloudSaveKey });
                 Debug.Log(starterPackStatusCloudSaveResult.Keys);
-                // If key is found, mark it as purchased if it it contains:  "claimed":true
+                
                 if (starterPackStatusCloudSaveResult.TryGetValue(k_StarterPackCloudSaveKey, out var result))
                 {
                     Debug.Log($"{k_StarterPackCloudSaveKey} value: {result}");
